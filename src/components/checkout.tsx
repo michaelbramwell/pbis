@@ -11,7 +11,6 @@ const stripePromise = loadStripe(
   process?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ""
 );
 
-console.log("env varssssss", process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
 export default function Checkout() {
   const [clientSecret, setClientSecret] = React.useState("");
@@ -25,7 +24,6 @@ export default function Checkout() {
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log("intent", data)
         return setClientSecret(data.clientSecret)
       });
   }, []);

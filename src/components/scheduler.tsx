@@ -1,9 +1,22 @@
 "use client";
 
 import React from "react";
-import { ScheduleMeeting, timeSlotDifference } from "react-schedule-meeting";
+import { ScheduleMeeting, StartTimeEventEmit, timeSlotDifference } from "react-schedule-meeting";
+import { useAppContext } from "../context/appState";
 
 export default function Scheduler() {
+  const { context, update } = useAppContext();
+
+  function onStartTimeSelect(e: StartTimeEventEmit) {
+    update({
+        ...context,
+        cost: 1000000
+    })  
+    console.log(e)
+  }
+
+  console.log("ctx in scheduler", context);
+
   const availableTimeslots = [0, 1, 2, 3, 4, 5].map((id) => {
     return {
       id,
@@ -32,7 +45,7 @@ export default function Scheduler() {
       primaryColor="#3f5b85"
       eventDurationInMinutes={60}
       availableTimeslots={availableTimeslots}
-      onStartTimeSelect={console.log}
+      onStartTimeSelect={(e) => onStartTimeSelect(e)}
     />
   );
 }
