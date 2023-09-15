@@ -1,4 +1,6 @@
-import { Inter } from "@next/font/google";
+"use client";
+
+import { Inter } from "next/font/google";
 import Scheduler from "@/components/scheduler";
 import Checkout from "@/components/checkout";
 import { getAuthStatus } from "@/service/auth";
