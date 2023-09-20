@@ -45,12 +45,12 @@ export function AppState({ children }: any) {
 
   const state: State = {
     context: appState,
-    update: async (booking: Booking)  => {
-    setAppState(booking);
-    await setDoc(doc(db, "bookings", "test"), booking);
-    console.log("Booking state updated with", booking);
-  },
-};
+    update: async (booking: Booking) => {
+      setAppState(booking);
+      await setDoc(doc(db, "bookings", "test"), booking, { merge: true });
+      console.log("Booking state updated with", booking);
+    },
+  };
 
-return <AppContext.Provider value={state}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={state}>{children}</AppContext.Provider>;
 }

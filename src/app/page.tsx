@@ -3,6 +3,7 @@
 import { Inter } from "next/font/google";
 import Scheduler from "@/components/scheduler";
 import Checkout from "@/components/checkout";
+import UserForm from "@/components/userForm";
 import { getAuthStatus } from "@/service/auth";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -19,6 +20,7 @@ export default async function Home() {
       {auth ? (
         <>
           <Scheduler />
+          <UserForm />
           <Checkout />
         </>
       ) : (
