@@ -4,7 +4,6 @@ import firebaseClient from "@/components/firebaseClient";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Booking, BookingType, PaymentStatus, StatusType } from "../app/model";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
-import { async } from "rxjs";
 
 interface State {
   context: Booking;
@@ -14,10 +13,12 @@ interface State {
 const initialContext: Booking = {
   start: new Date(),
   end: new Date(),
-  firstName: "",
-  lastName: "",
+  name: "",
   email: "",
   phone: "",
+  agentName: "",
+  agentEmail: "",
+  agentPhone: "",
   bookingType: BookingType.standard,
   status: StatusType.pending,
   paymentStatus: PaymentStatus.pending,

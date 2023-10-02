@@ -1,12 +1,9 @@
-"use client";
+"use client"
 
-import { Inter } from "next/font/google";
-import Scheduler from "@/components/scheduler";
 import Checkout from "@/components/checkout";
+import Scheduler from "@/components/scheduler";
 import UserForm from "@/components/userForm";
 import { getAuthStatus } from "@/service/auth";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export default async function Home() {
   const { auth, error } = await getAuthStatus();

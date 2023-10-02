@@ -8,7 +8,7 @@ export default function Checkout() {
 
       <stripe-buy-button
         buy-button-id="buy_btn_1NsFiRLSbI9u381J6UAQBh65"
-        publishable-key="pk_test_51MXcfULSbI9u381JHnu1IJYBrDaYkX6lcDvbUMTW6ZdAp9WGd5hdL4ZsEXtTKVNfgCWPu2x3ZtRoqRKrdtvWHgNW00zDjViswl"
+        publishable-key={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
       ></stripe-buy-button>
     </>
   )

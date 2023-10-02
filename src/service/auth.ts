@@ -1,30 +1,34 @@
+"user client"
+
 import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth"
 import firebaseClient from "../components/firebaseClient"
 
-function appAuth() {
-  return new Promise(async (resolve, reject) => {
-    const auth = getAuth(firebaseClient)
+async function appAuth() {
+  const auth = getAuth(firebaseClient)
 
-    if (
-      !process?.env?.NEXT_PUBLIC_FIREBASE_USR_EML ||
-      !process?.env.NEXT_PUBLIC_FIREBASE_USR_PWD
-    ) {
-      return reject("Env or env an app specific env prop is not defined, cannot proceed")
-    }
+  if (
+    !process?.env?.NEXT_PUBLIC_FIREBASE_USR_EML ||
+    !process?.env.NEXT_PUBLIC_FIREBASE_USR_PWD
+  ) {
+    return "Env or env an app specific env prop is not defined, cannot proceed"
+  }
 
-    if (!auth.currentUser) {
-      try {
+  if (!auth.currentUser) {
+    try {
 
-        const user = await signInWithEmailAndPassword(auth, process.env.NEXT_PUBLIC_FIREBASE_USR_EML,
-          process.env.NEXT_PUBLIC_FIREBASE_USR_PWD)
+      const user = await signInWithEmailAndPassword(auth, process.env.NEXT_PUBLIC_FIREBASE_USR_EML,
+        process.env.NEXT_PUBLIC_FIREBASE_USR_PWD)
+      console.log("user", user)
+      if (!user) {
+        return "User is not defined"
       }
-      catch (error) {
-        reject(error)
-      }
-    }
 
-    resolve(auth.currentUser)
-  })
+      return auth.currentUser
+    }
+    catch (error) {
+      return error;
+    }
+  }
 }
 
 export async function getAuthStatus() {
