@@ -1,4 +1,5 @@
-export interface Booking {
+export type Booking = {
+  id: string
   start: Date
   end: Date
   name: string
@@ -11,6 +12,12 @@ export interface Booking {
   status: StatusType,
   paymentStatus: PaymentStatus,
   cost: number
+}
+
+export type BookingPaymentConfirmed = {
+  id: string
+  status: StatusType 
+  paymentStatus: PaymentStatus
 }
 
 export enum BookingType {

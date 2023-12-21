@@ -7,6 +7,7 @@ import { getAuthStatus } from "@/service/auth";
 
 export default async function Home() {
   const { auth, error } = await getAuthStatus();
+
   if (error) {
     console.log("Auth Error", error);
   }
