@@ -1,5 +1,3 @@
-"use client"
-
 import Checkout from "@/components/checkout";
 import Scheduler from "@/components/scheduler";
 import UserForm from "@/components/userForm";
@@ -13,8 +11,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="container">
-      <p>PBIS</p>
+    <>
       {auth ? (
         <>
           <Scheduler />
@@ -24,6 +21,6 @@ export default async function Home() {
       ) : (
         <p>An error has occurred :(</p>
       )}
-    </div>
+    </>
   );
 }
