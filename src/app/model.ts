@@ -21,25 +21,37 @@ export type BookingPaymentConfirmed = {
 };
 
 export type WeeklySettings = {
-  sunday: DaySettings;
-  monday: DaySettings;
-  tuesday: DaySettings;
-  wednesday: DaySettings;
-  thursday: DaySettings;
-  friday: DaySettings;
-  saturday: DaySettings;
+  sunday: DaySettings | null;
+  monday: DaySettings | null;
+  tuesday: DaySettings | null;
+  wednesday: DaySettings | null;
+  thursday: DaySettings | null;
+  friday: DaySettings | null;
+  saturday: DaySettings | null;
 };
 
-export type DaySettings = {
+export type DaySettingsAndSlots = {
   value: string;
   isDayExcluded: boolean;
-  availability: AvailableTimeSlot[];
+  availability: AvailableTimeSlot[] | null;
 };
+
+export type DaySettings = Omit<DaySettingsAndSlots, "availability">;
 
 export type AvailableTimeSlot = {
   from: Date;
   to: Date;
 };
+
+export type WeeklySettingsAction = {
+  type: string;
+  selectedDay: string;
+  daySettings: DaySettingsAndSlots | DaySettings | null;
+};
+
+export enum WeeklySettingsActionType {
+  updateDay = "updateDay",
+}
 
 export enum BookingType {
   standard = "standard",

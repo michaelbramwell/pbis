@@ -4,20 +4,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useState } from "react";
-import { WeeklySettings } from "@/app/model";
+import { useState, useReducer } from "react";
+import {
+  WeeklySettings,
+  WeeklySettingsAction,
+  WeeklySettingsActionType,
+} from "@/app/model";
+import { v4 } from "uuid";
+import { da } from "date-fns/locale";
 
 const daysOfWeek: { [key: string]: string }[] = [
   {
@@ -90,7 +94,53 @@ function setDefaultTimeSlotValues() {
   return defaultValues;
 }
 
+const initialSettings: WeeklySettings = {
+  sunday: null,
+  monday: null,
+  tuesday: null,
+  wednesday: null,
+  thursday: null,
+  friday: null,
+  saturday: null,
+};
+
+function reducer(settings: WeeklySettings, action: WeeklySettingsAction) {
+  switch (action.type) {
+    case "updateDay": {
+      return {
+        ...settings,
+        [action.selectedDay.toLowerCase()]: {
+          ...[action.selectedDay.toLowerCase()],
+          value: action.daySettings?.value ?? "",
+          isDayExluded: action.daySettings?.isDayExcluded ?? false,
+        },
+      };
+    }
+  }
+
+  throw Error("Unknown action: " + action.type);
+}
+
+function getDay(dayOfWeek: string = "0") {
+  return daysOfWeek[parseInt(dayOfWeek)];
+}
+
+function getDayOfWeekName(dayOfWeek: string = "0") {
+  return daysOfWeek[parseInt(dayOfWeek)].label ?? "";
+}
+
 export function Defaults() {
+  const {
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      example: "",
+      exampleRequired: "",
+    },
+  });
+
   const formDefaults = useForm<z.infer<typeof FormSchemaDefaults>>({
     resolver: zodResolver(FormSchemaDefaults),
   });
@@ -103,6 +153,10 @@ export function Defaults() {
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState("");
   const [excludedDayOfWeek, setExcludedDayOfWeek] = useState("");
 
+  const [state, dispatch] = useReducer(reducer, initialSettings);
+
+  const { register, setValue } = useForm();
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <section>
@@ -111,7 +165,7 @@ export function Defaults() {
           <div>Select the default scheduled days of the the week.</div>
         </div>
         <Form {...formDefaults}>
-          <form className="w-2/3 space-y-6">
+          <form className="w-2/3 space-y-6" key={v4()}>
             <FormField
               control={formDefaults.control}
               name="daysOfWeekField"
@@ -122,15 +176,15 @@ export function Defaults() {
                     <RadioGroup
                       onValueChange={(value) => {
                         setSelectedDayOfWeek(value);
-                        return field.onChange;
+                        field.onChange(value);
                       }}
-                      defaultValue={field.value}
+                      value={field.value}
                       className="flex flex-col space-y-1"
                     >
                       {daysOfWeek.map((day) => (
                         <FormItem
                           className="flex items-center space-x-3 space-y-0"
-                          key={`default_${day.value}`}
+                          key={v4()}
                         >
                           <FormControl>
                             <RadioGroupItem value={day.value} />
@@ -150,19 +204,19 @@ export function Defaults() {
         </Form>
       </section>
 
-      {daysOfWeek[parseInt(selectedDayOfWeek)] && (
+      {getDay(selectedDayOfWeek) && (
         <section>
           <div className="mb-4">
-            <div className="text-base">{`${
-              daysOfWeek[parseInt(selectedDayOfWeek)]?.label ?? ""
-            }`}</div>
+            <div className="text-base">{`${getDayOfWeekName(
+              selectedDayOfWeek
+            )}`}</div>
             <div>Set the start, end times and gap between each inspection.</div>
-            <Form {...formOverrides}>
-              <form className="space-y-6">
+            <Form {...formOverrides} key={v4()}>
+              <form className="space-y-6" key={v4()}>
                 {daysOfWeek.map((day) => {
                   return day.value === selectedDayOfWeek ? (
                     <FormField
-                      key={`day_${day.value}`}
+                      key={v4()}
                       control={formOverrides.control}
                       name={`overridesDayField_${day.value}`}
                       render={({ field }) => (
@@ -171,17 +225,27 @@ export function Defaults() {
                             <Checkbox
                               checked={field.value}
                               onCheckedChange={(checked) => {
-                                console.log(`${selectedDayOfWeek}_${checked}`);
                                 setExcludedDayOfWeek(
-                                  `${selectedDayOfWeek}_${checked}`,
+                                  `${selectedDayOfWeek}_${checked}`
                                 );
-                                return field.onChange;
+
+                                dispatch({
+                                  type: WeeklySettingsActionType.updateDay,
+                                  selectedDay:
+                                    getDayOfWeekName(selectedDayOfWeek),
+                                  daySettings: {
+                                    value: selectedDayOfWeek,
+                                    isDayExcluded: checked as boolean,
+                                  },
+                                });
+
+                                field.onChange(checked);
                               }}
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
                             <FormLabel>{`Exclude all of ${
-                              daysOfWeek[parseInt(day.value)].label
+                              getDayOfWeekName(day.value)
                             }`}</FormLabel>
                           </div>
                         </FormItem>
@@ -196,11 +260,11 @@ export function Defaults() {
           </div>
 
           <div className="mb-4">
-            <div>{`Set the start and end time slots for each ${
-              daysOfWeek[parseInt(selectedDayOfWeek)]?.label ?? ""
-            }`}</div>
-            <Form {...formTimeSlots}>
-              <form className="space-y-6">
+            <div>{`Set the start and end time slots for each ${getDayOfWeekName(
+              selectedDayOfWeek
+            )}`}</div>
+            <Form {...formTimeSlots} key={v4()}>
+              <form className="space-y-6" key={v4()}>
                 <div className="flex flex-col items-start rounded-md border p-4 shadow">
                   {daysOfWeek.map((day) => {
                     return (
@@ -208,11 +272,12 @@ export function Defaults() {
                         className={
                           day.value === selectedDayOfWeek ? "" : "hidden"
                         }
-                        key={`days_timeslots_${day.value}`}
+                        key={v4()}
                       >
                         {[1, 2, 3, 4].map((n) => (
-                          <div className="flex flex-row py-2" key={`slot_${n}`}>
+                          <div className="flex flex-row py-2" key={v4()}>
                             <FormField
+                              key={v4()}
                               control={formTimeSlots.control}
                               name={`timeSlot${n}From_${day.value}`}
                               render={({ field }) => (
@@ -231,6 +296,7 @@ export function Defaults() {
                                 </FormItem>
                               )}
                             />
+
                             <FormField
                               control={formTimeSlots.control}
                               name={`timeSlot${n}To_${day.value}`}
