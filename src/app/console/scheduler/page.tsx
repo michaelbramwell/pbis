@@ -9,9 +9,6 @@ export default function Page() {
       <section>
         <Defaults></Defaults>
       </section>
-      <section>
-        <Calendar></Calendar>
-      </section>
     </main>
   );
 }

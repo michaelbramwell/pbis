@@ -6,6 +6,7 @@ import { z } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Form,
   FormControl,
@@ -21,7 +22,6 @@ import {
   WeeklySettingsActionType,
 } from "@/app/model";
 import { v4 } from "uuid";
-import { da } from "date-fns/locale";
 
 const daysOfWeek: { [key: string]: string }[] = [
   {
@@ -112,7 +112,7 @@ function reducer(settings: WeeklySettings, action: WeeklySettingsAction) {
         [action.selectedDay.toLowerCase()]: {
           ...[action.selectedDay.toLowerCase()],
           value: action.daySettings?.value ?? "",
-          isDayExluded: action.daySettings?.isDayExcluded ?? false,
+          isDayExcluded: action.daySettings?.isDayExcluded ?? false,
         },
       };
     }
@@ -126,7 +126,7 @@ function getDay(dayOfWeek: string = "0") {
 }
 
 function getDayOfWeekName(dayOfWeek: string = "0") {
-  return daysOfWeek[parseInt(dayOfWeek)].label ?? "";
+  return daysOfWeek[parseInt(dayOfWeek)]?.label ?? "";
 }
 
 export function Defaults() {
@@ -155,178 +155,204 @@ export function Defaults() {
 
   const [state, dispatch] = useReducer(reducer, initialSettings);
 
-  const { register, setValue } = useForm();
-
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <section>
-        <div className="mb-4">
-          <div className="text-base">Defaults</div>
-          <div>Select the default scheduled days of the the week.</div>
-        </div>
-        <Form {...formDefaults}>
-          <form className="w-2/3 space-y-6" key={v4()}>
-            <FormField
-              control={formDefaults.control}
-              name="daysOfWeekField"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Select a day...</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={(value) => {
-                        setSelectedDayOfWeek(value);
-                        field.onChange(value);
-                      }}
-                      value={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      {daysOfWeek.map((day) => (
-                        <FormItem
-                          className="flex items-center space-x-3 space-y-0"
-                          key={v4()}
-                        >
-                          <FormControl>
-                            <RadioGroupItem value={day.value} />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {day.label}
-                          </FormLabel>
-                        </FormItem>
-                      ))}
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </form>
-        </Form>
-      </section>
-
-      {getDay(selectedDayOfWeek) && (
+    <>
+      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
         <section>
           <div className="mb-4">
-            <div className="text-base">{`${getDayOfWeekName(
-              selectedDayOfWeek
-            )}`}</div>
-            <div>Set the start, end times and gap between each inspection.</div>
-            <Form {...formOverrides} key={v4()}>
-              <form className="space-y-6" key={v4()}>
-                {daysOfWeek.map((day) => {
-                  return day.value === selectedDayOfWeek ? (
-                    <FormField
-                      key={v4()}
-                      control={formOverrides.control}
-                      name={`overridesDayField_${day.value}`}
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={(checked) => {
-                                setExcludedDayOfWeek(
-                                  `${selectedDayOfWeek}_${checked}`
-                                );
-
-                                dispatch({
-                                  type: WeeklySettingsActionType.updateDay,
-                                  selectedDay:
-                                    getDayOfWeekName(selectedDayOfWeek),
-                                  daySettings: {
-                                    value: selectedDayOfWeek,
-                                    isDayExcluded: checked as boolean,
-                                  },
-                                });
-
-                                field.onChange(checked);
-                              }}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>{`Exclude all of ${
-                              getDayOfWeekName(day.value)
-                            }`}</FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <></>
-                  );
-                })}
-              </form>
-            </Form>
+            <div className="text-base font-semibold">Defaults</div>
+            <div>Select the default scheduled days of the the week.</div>
           </div>
-
-          <div className="mb-4">
-            <div>{`Set the start and end time slots for each ${getDayOfWeekName(
-              selectedDayOfWeek
-            )}`}</div>
-            <Form {...formTimeSlots} key={v4()}>
-              <form className="space-y-6" key={v4()}>
-                <div className="flex flex-col items-start rounded-md border p-4 shadow">
-                  {daysOfWeek.map((day) => {
-                    return (
-                      <div
-                        className={
-                          day.value === selectedDayOfWeek ? "" : "hidden"
-                        }
-                        key={v4()}
+          <Form {...formDefaults}>
+            <form className="w-2/3 space-y-6" key={v4()}>
+              <FormField
+                control={formDefaults.control}
+                name="daysOfWeekField"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Select a day...</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={(value) => {
+                          setSelectedDayOfWeek(value);
+                          field.onChange(value);
+                        }}
+                        value={field.value}
+                        className="flex flex-col space-y-1"
                       >
-                        {[1, 2, 3, 4].map((n) => (
-                          <div className="flex flex-row py-2" key={v4()}>
-                            <FormField
-                              key={v4()}
-                              control={formTimeSlots.control}
-                              name={`timeSlot${n}From_${day.value}`}
-                              render={({ field }) => (
-                                <FormItem className="px-4">
-                                  <FormControl>
-                                    <Input
-                                      type="time"
-                                      {...field}
-                                      value={field.value}
-                                      disabled={
-                                        excludedDayOfWeek ===
-                                        `${day.value}_true`
-                                      }
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={formTimeSlots.control}
-                              name={`timeSlot${n}To_${day.value}`}
-                              render={({ field }) => (
-                                <FormItem className="">
-                                  <FormControl>
-                                    <Input
-                                      type="time"
-                                      {...field}
-                                      value={field.value}
-                                      disabled={
-                                        excludedDayOfWeek ===
-                                        `${day.value}_true`
-                                      }
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </div>
+                        {daysOfWeek.map((day) => (
+                          <FormItem
+                            className="flex items-center space-x-3 space-y-0"
+                            key={v4()}
+                          >
+                            <FormControl>
+                              <RadioGroupItem value={day.value} />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {day.label}
+                            </FormLabel>
+                          </FormItem>
                         ))}
-                      </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        </section>
+
+        {getDay(selectedDayOfWeek) && (
+          <section>
+            <div className="mt-5 mb-4">
+              <div className="text-base font-medium">{`${getDayOfWeekName(
+                selectedDayOfWeek
+              )}`}</div>
+              <div>
+                Set the start, end times and gap between each inspection.
+              </div>
+              <Form {...formOverrides} key={v4()}>
+                <form className="space-y-6" key={v4()}>
+                  {daysOfWeek.map((day) => {
+                    return day.value === selectedDayOfWeek ? (
+                      <FormField
+                        key={v4()}
+                        control={formOverrides.control}
+                        name={`overridesDayField_${day.value}`}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={(checked) => {
+                                  setExcludedDayOfWeek(
+                                    `${selectedDayOfWeek}_${checked}`
+                                  );
+
+                                  dispatch({
+                                    type: WeeklySettingsActionType.updateDay,
+                                    selectedDay:
+                                      getDayOfWeekName(selectedDayOfWeek),
+                                    daySettings: {
+                                      value: selectedDayOfWeek,
+                                      isDayExcluded: checked as boolean,
+                                    },
+                                  });
+
+                                  field.onChange(checked);
+                                }}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>{`Exclude all of ${getDayOfWeekName(
+                                day.value
+                              )}`}</FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <></>
                     );
                   })}
-                </div>
-              </form>
-            </Form>
+                </form>
+              </Form>
+            </div>
+
+            {timeslots(true, getDayOfWeekName(selectedDayOfWeek))}
+          </section>
+        )}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-10">
+        <section>
+          <div className="mb-4">
+            <div className="text-base font-semibold">Overrides</div>
+            <div>
+              Override defaults by selecting a day and setting the appointment
+              times.
+            </div>
           </div>
+          <Calendar></Calendar>
         </section>
-      )}
-    </div>
+        <section>
+          {timeslots(false, "blah")}
+        </section>
+      </div>
+    </>
   );
+
+  function timeslots(isDefaultMode = true, dayStrVal: string) {
+    return (
+      <div className="mt-4 mb-4">
+        <div>{`Set the start and end time slots for each ${dayStrVal}`}</div>
+        <Form {...formTimeSlots} key={v4()}>
+          <form className="space-y-6" key={v4()}>
+            <div className="flex flex-col items-start rounded-md border p-4 shadow">
+              {daysOfWeek.map((day) => {
+                return (
+                  <div
+                    className={day.value === selectedDayOfWeek ? "" : "hidden"}
+                    key={v4()}
+                  >
+                    {[1, 2, 3, 4].map((n) => (
+                      <div className="flex flex-row py-2" key={v4()}>
+                        <FormField
+                          key={v4()}
+                          control={formTimeSlots.control}
+                          name={`timeSlot${n}From_${day.value}`}
+                          render={({ field }) => (
+                            <FormItem className="px-4">
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  {...field}
+                                  value={field.value}
+                                  disabled={
+                                    isDefaultMode &&
+                                    state[
+                                      getDayOfWeekName(
+                                        selectedDayOfWeek
+                                      ).toLocaleLowerCase() as keyof typeof state
+                                    ]?.isDayExcluded
+                                  }
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={formTimeSlots.control}
+                          name={`timeSlot${n}To_${day.value}`}
+                          render={({ field }) => (
+                            <FormItem className="">
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  {...field}
+                                  value={field.value}
+                                  disabled={
+                                    isDefaultMode &&
+                                    state[
+                                      getDayOfWeekName(
+                                        selectedDayOfWeek
+                                      ).toLocaleLowerCase() as keyof typeof state
+                                    ]?.isDayExcluded
+                                  }
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </form>
+        </Form>
+      </div>
+    );
+  }
 }
