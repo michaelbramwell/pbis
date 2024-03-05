@@ -15,13 +15,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useState, useReducer } from "react";
+import { useState, useReducer, use, useEffect } from "react";
 import {
   WeeklySettings,
   WeeklySettingsAction,
-  WeeklySettingsActionType,
+  SettingsActionType,
+  OverrideSettings,
+  OverrideSettingsAction,
 } from "@/app/model";
 import { v4 } from "uuid";
+import { format } from "date-fns";
 
 const daysOfWeek: { [key: string]: string }[] = [
   {
@@ -94,7 +97,7 @@ function setDefaultTimeSlotValues() {
   return defaultValues;
 }
 
-const initialSettings: WeeklySettings = {
+const initialWeeklySettings: WeeklySettings = {
   sunday: null,
   monday: null,
   tuesday: null,
@@ -104,7 +107,11 @@ const initialSettings: WeeklySettings = {
   saturday: null,
 };
 
-function reducer(settings: WeeklySettings, action: WeeklySettingsAction) {
+const initialOverrideSettings: OverrideSettings = {
+  settings: [],
+};
+
+function weeklySettingsReducer(settings: WeeklySettings, action: WeeklySettingsAction) {
   switch (action.type) {
     case "updateDay": {
       return {
@@ -114,6 +121,19 @@ function reducer(settings: WeeklySettings, action: WeeklySettingsAction) {
           value: action.daySettings?.value ?? "",
           isDayExcluded: action.daySettings?.isDayExcluded ?? false,
         },
+      };
+    }
+  }
+
+  throw Error("Unknown action: " + action.type);
+}
+
+function overrideSettingsReducer(overrideSettings: OverrideSettings, action: OverrideSettingsAction) {
+  switch (action.type) {
+    case "overrideDay": {
+      return {
+        ...overrideSettings,
+        settings: [...overrideSettings.settings, action],
       };
     }
   }
@@ -152,8 +172,18 @@ export function Defaults() {
 
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState("");
   const [excludedDayOfWeek, setExcludedDayOfWeek] = useState("");
+  const [weeklySettingsState, weeklySettingsDispatch] = useReducer(weeklySettingsReducer, initialWeeklySettings);
+  const [overrideSettingsState, overrideSettingsDispatch] = useReducer(overrideSettingsReducer, initialOverrideSettings);
 
-  const [state, dispatch] = useReducer(reducer, initialSettings);
+  const [selectedDay, setSelectedDay] = useState<Date>();
+
+  useEffect(() => {
+    console.log(weeklySettingsState);
+  }, [weeklySettingsState]);
+
+  useEffect(() => {
+    console.log(overrideSettingsState);
+  }, [overrideSettingsState]);
 
   return (
     <>
@@ -230,8 +260,8 @@ export function Defaults() {
                                     `${selectedDayOfWeek}_${checked}`
                                   );
 
-                                  dispatch({
-                                    type: WeeklySettingsActionType.updateDay,
+                                  weeklySettingsDispatch({
+                                    type: SettingsActionType.updateDay,
                                     selectedDay:
                                       getDayOfWeekName(selectedDayOfWeek),
                                     daySettings: {
@@ -273,10 +303,31 @@ export function Defaults() {
               times.
             </div>
           </div>
-          <Calendar></Calendar>
+          <Calendar
+            mode="single"
+            showOutsideDays={true}
+            selected={selectedDay}
+            onSelect={(day) => {
+              if (!day) return;
+
+              if(overrideSettingsState.settings.some((s) => s.date?.getTime() === day.getTime())) {
+                return
+              }
+
+              console.log(day);
+              overrideSettingsDispatch({
+                type: "overrideDay",
+                ticks: day?.getTime() ?? null,
+                date: day ?? null,
+                availability: null,
+              });
+
+              setSelectedDay(day)
+            }}
+          ></Calendar>
         </section>
         <section>
-          {timeslots(false, "blah")}
+          {selectedDay && timeslots(false, selectedDay ? format(selectedDay, 'PPP') : '')}
         </section>
       </div>
     </>
@@ -310,10 +361,10 @@ export function Defaults() {
                                   value={field.value}
                                   disabled={
                                     isDefaultMode &&
-                                    state[
+                                    weeklySettingsState[
                                       getDayOfWeekName(
                                         selectedDayOfWeek
-                                      ).toLocaleLowerCase() as keyof typeof state
+                                      ).toLocaleLowerCase() as keyof typeof weeklySettingsState
                                     ]?.isDayExcluded
                                   }
                                 />
@@ -333,10 +384,10 @@ export function Defaults() {
                                   value={field.value}
                                   disabled={
                                     isDefaultMode &&
-                                    state[
+                                    weeklySettingsState[
                                       getDayOfWeekName(
                                         selectedDayOfWeek
-                                      ).toLocaleLowerCase() as keyof typeof state
+                                      ).toLocaleLowerCase() as keyof typeof weeklySettingsState
                                     ]?.isDayExcluded
                                   }
                                 />

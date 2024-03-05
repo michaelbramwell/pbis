@@ -49,8 +49,23 @@ export type WeeklySettingsAction = {
   daySettings: DaySettingsAndSlots | DaySettings | null;
 };
 
-export enum WeeklySettingsActionType {
+export type OverrideSettings = {
+  settings: OverrideSetting [];
+};
+
+export type OverrideSetting = {
+  ticks: number | null;
+  date: Date | null;
+  availability: AvailableTimeSlot[] | null;
+};
+
+export type OverrideSettingsAction = OverrideSetting & {
+  type: string;
+};
+
+export enum SettingsActionType {
   updateDay = "updateDay",
+  overrideDate = "overrideDay"
 }
 
 export enum BookingType {
