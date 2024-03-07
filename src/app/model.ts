@@ -1,88 +1,89 @@
 export type Booking = {
-  id: string;
-  start: Date;
-  end: Date;
-  name: string;
-  email: string;
-  phone: string;
-  agentName: string;
-  agentPhone: string;
-  agentEmail: string;
-  bookingType: BookingType;
-  status: StatusType;
-  paymentStatus: PaymentStatus;
-  cost: number;
+	id: string;
+	start: Date;
+	end: Date;
+	name: string;
+	email: string;
+	phone: string;
+	agentName: string;
+	agentPhone: string;
+	agentEmail: string;
+	bookingType: BookingType;
+	status: StatusType;
+	paymentStatus: PaymentStatus;
+	cost: number;
 };
 
 export type BookingPaymentConfirmed = {
-  id: string;
-  status: StatusType;
-  paymentStatus: PaymentStatus;
+	id: string;
+	status: StatusType;
+	paymentStatus: PaymentStatus;
 };
 
 export type WeeklySettings = {
-  sunday: DaySettings | null;
-  monday: DaySettings | null;
-  tuesday: DaySettings | null;
-  wednesday: DaySettings | null;
-  thursday: DaySettings | null;
-  friday: DaySettings | null;
-  saturday: DaySettings | null;
+	sunday: DaySettingsAndSlots | null;
+	monday: DaySettingsAndSlots | null;
+	tuesday: DaySettingsAndSlots | null;
+	wednesday: DaySettingsAndSlots | null;
+	thursday: DaySettingsAndSlots | null;
+	friday: DaySettingsAndSlots | null;
+	saturday: DaySettingsAndSlots | null;
 };
 
 export type DaySettingsAndSlots = {
-  value: string;
-  isDayExcluded: boolean;
-  availability: AvailableTimeSlot[] | null;
+	value: string;
+	isDayExcluded: boolean;
+	availability: AvailableTimeSlot[] | null;
 };
 
-export type DaySettings = Omit<DaySettingsAndSlots, "availability">;
-
 export type AvailableTimeSlot = {
-  from: Date;
-  to: Date;
+	from: string;
+	to: string;
+	index: number;
 };
 
 export type WeeklySettingsAction = {
-  type: string;
-  selectedDay: string;
-  daySettings: DaySettingsAndSlots | DaySettings | null;
+	type: string;
+	selectedDay: string;
+	daySettings: DaySettingsAndSlots | null;
+	timeSlot: AvailableTimeSlot | null;
 };
 
 export type OverrideSettings = {
-  settings: OverrideSetting [];
+	settings: OverrideSetting [];
 };
 
 export type OverrideSetting = {
-  ticks: number | null;
-  date: Date | null;
-  availability: AvailableTimeSlot[] | null;
+	ticks: number | null;
+	date: Date | null;
+	availability: AvailableTimeSlot[] | null;
 };
 
 export type OverrideSettingsAction = OverrideSetting & {
-  type: string;
+	type: string;
 };
 
 export enum SettingsActionType {
-  updateDay = "updateDay",
-  overrideDate = "overrideDay"
+	updateDay = "updateDay",
+	updateTimeSlot = "updateTimeSlot",
+	overrideDate = "overrideDay"
 }
 
 export enum BookingType {
-  standard = "standard",
-  large = "large",
+	standard = "standard",
+	large = "large",
 }
 
 export enum StatusType {
-  booked = "booked",
-  pending = "pending",
-  canceled = "canceled",
+	booked = "booked",
+	pending = "pending",
+	canceled = "canceled",
 }
 
 export enum PaymentStatus {
-  payed = "payed",
-  declined = "declined",
-  pending = "pending",
+	payed = "payed",
+	declined = "declined",
+	pending = "pending",
 }
 
 export const sessionTimeout: number = 30;

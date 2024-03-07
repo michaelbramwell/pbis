@@ -22,9 +22,9 @@ import {
   SettingsActionType,
   OverrideSettings,
   OverrideSettingsAction,
+  AvailableTimeSlot,
 } from "@/app/model";
 import { v4 } from "uuid";
-import { format } from "date-fns";
 
 const daysOfWeek: { [key: string]: string }[] = [
   {
@@ -61,43 +61,7 @@ const FormSchemaDefaults = z.object({
   daysOfWeekField: z.string(),
 });
 
-function setDefaultTimeSlotValues() {
-  const defaultValues: { [key: string]: string } = {};
-
-  daysOfWeek.forEach((day) => {
-    defaultValues["timeSlot1From_" + day.value] = new Date("2024-02-06 07:00")
-      .toLocaleString()
-      .substring(12, 17);
-    defaultValues["timeSlot1To_" + day.value] = new Date("2024-02-06 08:30")
-      .toLocaleString()
-      .substring(12, 17);
-
-    defaultValues["timeSlot2From_" + day.value] = new Date("2024-02-06 09:30")
-      .toLocaleString()
-      .substring(12, 17);
-    defaultValues["timeSlot2To_" + day.value] = new Date("2024-02-06 11:00")
-      .toLocaleString()
-      .substring(12, 17);
-
-    defaultValues["timeSlot3From_" + day.value] = new Date("2024-02-06 12:00")
-      .toLocaleString()
-      .substring(12, 17);
-    defaultValues["timeSlot3To_" + day.value] = new Date("2024-02-06 13:30")
-      .toLocaleString()
-      .substring(12, 17);
-
-    defaultValues["timeSlot4From_" + day.value] = new Date("2024-02-06 14:30")
-      .toLocaleString()
-      .substring(12, 17);
-    defaultValues["timeSlot4To_" + day.value] = new Date("2024-02-06 16:00")
-      .toLocaleString()
-      .substring(12, 17);
-  });
-
-  return defaultValues;
-}
-
-const initialWeeklySettings: WeeklySettings = {
+const initialWeeklySettings: StripeIssuingCardNumberDisplayElementOptionsuu = {
   sunday: null,
   monday: null,
   tuesday: null,
@@ -111,9 +75,12 @@ const initialOverrideSettings: OverrideSettings = {
   settings: [],
 };
 
-function weeklySettingsReducer(settings: WeeklySettings, action: WeeklySettingsAction) {
+function weeklySettingsReducer(
+  settings: WeeklySettings,
+  action: WeeklySettingsAction
+) {
   switch (action.type) {
-    case "updateDay": {
+    case SettingsActionType.updateDay: {
       return {
         ...settings,
         [action.selectedDay.toLowerCase()]: {
@@ -123,14 +90,34 @@ function weeklySettingsReducer(settings: WeeklySettings, action: WeeklySettingsA
         },
       };
     }
+    case SettingsActionType.updateTimeSlot: {
+      const filteredAvailabilityState = (
+        settings[action.selectedDay.toLowerCase()]?.availability ?? []
+      ).filter(
+        (element: AvailableTimeSlot) => element.index !== action.timeSlot?.index
+      );
+
+      return {
+        ...settings,
+        [action.selectedDay.toLowerCase()]: {
+          ...[action.selectedDay.toLowerCase()],
+          value: action.daySettings?.value ?? "",
+          isDayExcluded: action.daySettings?.isDayExcluded ?? false,
+          availability: [...filteredAvailabilityState, action.timeSlot],
+        },
+      };
+    }
   }
 
   throw Error("Unknown action: " + action.type);
 }
 
-function overrideSettingsReducer(overrideSettings: OverrideSettings, action: OverrideSettingsAction) {
+function overrideSettingsReducer(
+  overrideSettings: OverrideSettings,
+  action: OverrideSettingsAction
+) {
   switch (action.type) {
-    case "overrideDay": {
+    case SettingsActionType.overrideDate: {
       return {
         ...overrideSettings,
         settings: [...overrideSettings.settings, action],
@@ -151,29 +138,26 @@ function getDayOfWeekName(dayOfWeek: string = "0") {
 
 export function Defaults() {
   const {
-    handleSubmit,
-    watch,
     formState: { errors },
-  } = useForm({
-    defaultValues: {
-      example: "",
-      exampleRequired: "",
-    },
-  });
+  } = useForm();
 
   const formDefaults = useForm<z.infer<typeof FormSchemaDefaults>>({
     resolver: zodResolver(FormSchemaDefaults),
   });
 
   const formOverrides = useForm();
-  const formTimeSlots = useForm({
-    defaultValues: setDefaultTimeSlotValues(),
-  });
+  const formTimeSlots = useForm();
 
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState("");
   const [excludedDayOfWeek, setExcludedDayOfWeek] = useState("");
-  const [weeklySettingsState, weeklySettingsDispatch] = useReducer(weeklySettingsReducer, initialWeeklySettings);
-  const [overrideSettingsState, overrideSettingsDispatch] = useReducer(overrideSettingsReducer, initialOverrideSettings);
+  const [weeklySettingsState, weeklySettingsDispatch] = useReducer(
+    weeklySettingsReducer,
+    initialWeeklySettings
+  );
+  const [overrideSettingsState, overrideSettingsDispatch] = useReducer(
+    overrideSettingsReducer,
+    initialOverrideSettings
+  );
 
   const [selectedDay, setSelectedDay] = useState<Date>();
 
@@ -267,7 +251,9 @@ export function Defaults() {
                                     daySettings: {
                                       value: selectedDayOfWeek,
                                       isDayExcluded: checked as boolean,
+                                      availability: null,
                                     },
+                                    timeSlot: null,
                                   });
 
                                   field.onChange(checked);
@@ -310,8 +296,12 @@ export function Defaults() {
             onSelect={(day) => {
               if (!day) return;
 
-              if(overrideSettingsState.settings.some((s) => s.date?.getTime() === day.getTime())) {
-                return
+              if (
+                overrideSettingsState.settings.some(
+                  (s) => s.date?.getTime() === day.getTime()
+                )
+              ) {
+                return;
               }
 
               console.log(day);
@@ -322,13 +312,14 @@ export function Defaults() {
                 availability: null,
               });
 
-              setSelectedDay(day)
+              setSelectedDay(day);
             }}
           ></Calendar>
         </section>
-        <section>
-          {selectedDay && timeslots(false, selectedDay ? format(selectedDay, 'PPP') : '')}
-        </section>
+        {/* <section>
+          {selectedDay &&
+            timeslots(false, selectedDay ? format(selectedDay, "PPP") : "")}
+        </section> */}
       </div>
     </>
   );
@@ -346,7 +337,7 @@ export function Defaults() {
                     className={day.value === selectedDayOfWeek ? "" : "hidden"}
                     key={v4()}
                   >
-                    {[1, 2, 3, 4].map((n) => (
+                    {[1, 2, 3, 4].map((n, index) => (
                       <div className="flex flex-row py-2" key={v4()}>
                         <FormField
                           key={v4()}
@@ -367,6 +358,30 @@ export function Defaults() {
                                       ).toLocaleLowerCase() as keyof typeof weeklySettingsState
                                     ]?.isDayExcluded
                                   }
+                                  onChange={(e) => {
+                                    field.onChange(e.target.value);
+
+                                    weeklySettingsDispatch({
+                                      type: SettingsActionType.updateTimeSlot,
+                                      selectedDay:
+                                        getDayOfWeekName(selectedDayOfWeek),
+                                      daySettings: {
+                                        value: selectedDayOfWeek,
+                                        isDayExcluded: false,
+                                        availability: null,
+                                      },
+                                      timeSlot: {
+                                        from: e.target.value,
+                                        to:
+                                          weeklySettingsState[
+                                            getDayOfWeekName(
+                                              selectedDayOfWeek
+                                            ).toLocaleLowerCase() as keyof typeof weeklySettingsState
+                                          ]?.availability?.[index]?.to ?? "",
+                                        index: index,
+                                      },
+                                    });
+                                  }}
                                 />
                               </FormControl>
                             </FormItem>
@@ -390,6 +405,30 @@ export function Defaults() {
                                       ).toLocaleLowerCase() as keyof typeof weeklySettingsState
                                     ]?.isDayExcluded
                                   }
+                                  onChange={(e) => {
+                                    field.onChange(e.target.value);
+
+                                    weeklySettingsDispatch({
+                                      type: SettingsActionType.updateTimeSlot,
+                                      selectedDay:
+                                        getDayOfWeekName(selectedDayOfWeek),
+                                      daySettings: {
+                                        value: selectedDayOfWeek,
+                                        isDayExcluded: false,
+                                        availability: null,
+                                      },
+                                      timeSlot: {
+                                        from:
+                                          weeklySettingsState[
+                                            getDayOfWeekName(
+                                              selectedDayOfWeek
+                                            ).toLocaleLowerCase() as keyof typeof weeklySettingsState
+                                          ]?.availability?.[index]?.from ?? "",
+                                        to: e.target.value,
+                                        index: index,
+                                      },
+                                    });
+                                  }}
                                 />
                               </FormControl>
                             </FormItem>
