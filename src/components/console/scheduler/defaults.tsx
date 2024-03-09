@@ -126,7 +126,7 @@ function overrideSettingsReducer(
         (s) => s.ticks !== action.ticks
       );
       return {
-        ...filteredOverrideSettings,
+        ...overrideSettings,
         settings: [
           ...filteredOverrideSettings,
           {
@@ -256,7 +256,7 @@ export function Defaults() {
                                 checked={field.value}
                                 onCheckedChange={(checked) => {
                                   setExcludedDayOfWeek(
-                                    `${selectedDayOfWeek}_${checked}`
+                                    `${eelectedDayOfWeek}_${checked}`
                                   );
 
                                   weeklySettingsDispatch({
