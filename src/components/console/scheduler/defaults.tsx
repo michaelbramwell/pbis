@@ -61,7 +61,7 @@ const FormSchemaDefaults = z.object({
   daysOfWeekField: z.string(),
 });
 
-const initialWeeklySettings: StripeIssuingCardNumberDisplayElementOptionsuu = {
+const initialWeeklySettings: WeeklySettings = {
   sunday: null,
   monday: null,
   tuesday: null,
@@ -83,6 +83,7 @@ function weeklySettingsReducer(
     case SettingsActionType.updateDay: {
       return {
         ...settings,
+        // WeeklySettings Obj e.g. { sunday: { value: "0", isDayExcluded: false, availability: null } }
         [action.selectedDay.toLowerCase()]: {
           ...[action.selectedDay.toLowerCase()],
           value: action.daySettings?.value ?? "",
@@ -91,6 +92,7 @@ function weeklySettingsReducer(
       };
     }
     case SettingsActionType.updateTimeSlot: {
+      // remove the time slot if it exists
       const filteredAvailabilityState = (
         settings[action.selectedDay.toLowerCase()]?.availability ?? []
       ).filter(
@@ -99,10 +101,12 @@ function weeklySettingsReducer(
 
       return {
         ...settings,
+        // WeeklySettings Obj e.g. { sunday: { value: "0", isDayExcluded: false, availability: [ ... ] } }
         [action.selectedDay.toLowerCase()]: {
           ...[action.selectedDay.toLowerCase()],
           value: action.daySettings?.value ?? "",
           isDayExcluded: action.daySettings?.isDayExcluded ?? false,
+          // AvailableTimeSlot Obj e.g. { from: "09:00", to: "17:00", index: 0 }
           availability: [...filteredAvailabilityState, action.timeSlot],
         },
       };
@@ -118,9 +122,19 @@ function overrideSettingsReducer(
 ) {
   switch (action.type) {
     case SettingsActionType.overrideDate: {
+      const filteredOverrideSettings = overrideSettings.settings.filter(
+        (s) => s.ticks !== action.ticks
+      );
       return {
-        ...overrideSettings,
-        settings: [...overrideSettings.settings, action],
+        ...filteredOverrideSettings,
+        settings: [
+          ...filteredOverrideSettings,
+          {
+            ticks: action.ticks,
+            date: action.date,
+            availability: action.availability,
+          },
+        ],
       };
     }
   }
@@ -147,6 +161,7 @@ export function Defaults() {
 
   const formOverrides = useForm();
   const formTimeSlots = useForm();
+  const formTimeSlotsOverrides = useForm();
 
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState("");
   const [excludedDayOfWeek, setExcludedDayOfWeek] = useState("");
@@ -159,7 +174,7 @@ export function Defaults() {
     initialOverrideSettings
   );
 
-  const [selectedDay, setSelectedDay] = useState<Date>();
+  const [selectedOverrideDay, setSelectedOverrideDay] = useState<Date>();
 
   useEffect(() => {
     console.log(weeklySettingsState);
@@ -276,7 +291,131 @@ export function Defaults() {
               </Form>
             </div>
 
-            {timeslots(true, getDayOfWeekName(selectedDayOfWeek))}
+            <div className="mt-4 mb-4">
+              <div>{`Set the start and end time slots for each ${getDayOfWeekName(
+                selectedDayOfWeek
+              )}`}</div>
+              <Form {...formTimeSlots} key={v4()}>
+                <form className="space-y-6" key={v4()}>
+                  <div className="flex flex-col items-start rounded-md border p-4 shadow">
+                    {daysOfWeek.map((day) => {
+                      return (
+                        <div
+                          className={
+                            day.value === selectedDayOfWeek ? "" : "hidden"
+                          }
+                          key={v4()}
+                        >
+                          {[1, 2, 3, 4].map((n, index) => (
+                            <div className="flex flex-row py-2" key={v4()}>
+                              <FormField
+                                key={v4()}
+                                control={formTimeSlots.control}
+                                name={`timeSlot${n}From_${day.value}`}
+                                render={({ field }) => (
+                                  <FormItem className="px-4">
+                                    <FormControl>
+                                      <Input
+                                        type="time"
+                                        {...field}
+                                        value={field.value}
+                                        disabled={
+                                          weeklySettingsState[
+                                            getDayOfWeekName(
+                                              selectedDayOfWeek
+                                            ).toLocaleLowerCase() as keyof typeof weeklySettingsState
+                                          ]?.isDayExcluded
+                                        }
+                                        onChange={(e) => {
+                                          field.onChange(e.target.value);
+
+                                          weeklySettingsDispatch({
+                                            type: SettingsActionType.updateTimeSlot,
+                                            selectedDay:
+                                              getDayOfWeekName(
+                                                selectedDayOfWeek
+                                              ),
+                                            daySettings: {
+                                              value: selectedDayOfWeek,
+                                              isDayExcluded: false,
+                                              availability: null,
+                                            },
+                                            timeSlot: {
+                                              from: e.target.value,
+                                              to:
+                                                weeklySettingsState[
+                                                  getDayOfWeekName(
+                                                    selectedDayOfWeek
+                                                  ).toLocaleLowerCase() as keyof typeof weeklySettingsState
+                                                ]?.availability?.[index]?.to ??
+                                                "",
+                                              index: index,
+                                            },
+                                          });
+                                        }}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={formTimeSlots.control}
+                                name={`timeSlot${n}To_${day.value}`}
+                                render={({ field }) => (
+                                  <FormItem className="">
+                                    <FormControl>
+                                      <Input
+                                        type="time"
+                                        {...field}
+                                        value={field.value}
+                                        disabled={
+                                          weeklySettingsState[
+                                            getDayOfWeekName(
+                                              selectedDayOfWeek
+                                            ).toLocaleLowerCase() as keyof typeof weeklySettingsState
+                                          ]?.isDayExcluded
+                                        }
+                                        onChange={(e) => {
+                                          field.onChange(e.target.value);
+
+                                          weeklySettingsDispatch({
+                                            type: SettingsActionType.updateTimeSlot,
+                                            selectedDay:
+                                              getDayOfWeekName(
+                                                selectedDayOfWeek
+                                              ),
+                                            daySettings: {
+                                              value: selectedDayOfWeek,
+                                              isDayExcluded: false,
+                                              availability: null,
+                                            },
+                                            timeSlot: {
+                                              from:
+                                                weeklySettingsState[
+                                                  getDayOfWeekName(
+                                                    selectedDayOfWeek
+                                                  ).toLocaleLowerCase() as keyof typeof weeklySettingsState
+                                                ]?.availability?.[index]
+                                                  ?.from ?? "",
+                                              to: e.target.value,
+                                              index: index,
+                                            },
+                                          });
+                                        }}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </form>
+              </Form>
+            </div>
           </section>
         )}
       </div>
@@ -292,157 +431,101 @@ export function Defaults() {
           <Calendar
             mode="single"
             showOutsideDays={true}
-            selected={selectedDay}
+            selected={selectedOverrideDay}
             onSelect={(day) => {
               if (!day) return;
-
-              if (
-                overrideSettingsState.settings.some(
-                  (s) => s.date?.getTime() === day.getTime()
-                )
-              ) {
-                return;
-              }
-
               console.log(day);
-              overrideSettingsDispatch({
-                type: "overrideDay",
-                ticks: day?.getTime() ?? null,
-                date: day ?? null,
-                availability: null,
-              });
-
-              setSelectedDay(day);
+              setSelectedOverrideDay(day);
             }}
           ></Calendar>
         </section>
-        {/* <section>
-          {selectedDay &&
-            timeslots(false, selectedDay ? format(selectedDay, "PPP") : "")}
-        </section> */}
-      </div>
-    </>
-  );
+        <div className="mt-4 mb-4">
+          <div>{`Set the start and end time slots for the selected override date: ${selectedOverrideDay}`}</div>
+          <Form {...formTimeSlotsOverrides} key={v4()}>
+            <form className="space-y-6" key={v4()}>
+              <div className="flex flex-col items-start rounded-md border p-4 shadow">
+                <div key={v4()}>
+                  {[1, 2, 3, 4].map((n, index) => (
+                    <div className="flex flex-row py-2" key={v4()}>
+                      <FormField
+                        key={v4()}
+                        control={formTimeSlots.control}
+                        name={`timeSlotOverride${n}From`}
+                        render={({ field }) => (
+                          <FormItem className="px-4">
+                            <FormControl>
+                              <Input
+                                type="time"
+                                {...field}
+                                value={field.value}
+                                onChange={(e) => {
+                                  field.onChange(e.target.value);
 
-  function timeslots(isDefaultMode = true, dayStrVal: string) {
-    return (
-      <div className="mt-4 mb-4">
-        <div>{`Set the start and end time slots for each ${dayStrVal}`}</div>
-        <Form {...formTimeSlots} key={v4()}>
-          <form className="space-y-6" key={v4()}>
-            <div className="flex flex-col items-start rounded-md border p-4 shadow">
-              {daysOfWeek.map((day) => {
-                return (
-                  <div
-                    className={day.value === selectedDayOfWeek ? "" : "hidden"}
-                    key={v4()}
-                  >
-                    {[1, 2, 3, 4].map((n, index) => (
-                      <div className="flex flex-row py-2" key={v4()}>
-                        <FormField
-                          key={v4()}
-                          control={formTimeSlots.control}
-                          name={`timeSlot${n}From_${day.value}`}
-                          render={({ field }) => (
-                            <FormItem className="px-4">
-                              <FormControl>
-                                <Input
-                                  type="time"
-                                  {...field}
-                                  value={field.value}
-                                  disabled={
-                                    isDefaultMode &&
-                                    weeklySettingsState[
-                                      getDayOfWeekName(
-                                        selectedDayOfWeek
-                                      ).toLocaleLowerCase() as keyof typeof weeklySettingsState
-                                    ]?.isDayExcluded
-                                  }
-                                  onChange={(e) => {
-                                    field.onChange(e.target.value);
-
-                                    weeklySettingsDispatch({
-                                      type: SettingsActionType.updateTimeSlot,
-                                      selectedDay:
-                                        getDayOfWeekName(selectedDayOfWeek),
-                                      daySettings: {
-                                        value: selectedDayOfWeek,
-                                        isDayExcluded: false,
-                                        availability: null,
-                                      },
-                                      timeSlot: {
-                                        from: e.target.value,
-                                        to:
-                                          weeklySettingsState[
-                                            getDayOfWeekName(
-                                              selectedDayOfWeek
-                                            ).toLocaleLowerCase() as keyof typeof weeklySettingsState
-                                          ]?.availability?.[index]?.to ?? "",
-                                        index: index,
-                                      },
-                                    });
-                                  }}
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={formTimeSlots.control}
-                          name={`timeSlot${n}To_${day.value}`}
-                          render={({ field }) => (
-                            <FormItem className="">
-                              <FormControl>
-                                <Input
-                                  type="time"
-                                  {...field}
-                                  value={field.value}
-                                  disabled={
-                                    isDefaultMode &&
-                                    weeklySettingsState[
-                                      getDayOfWeekName(
-                                        selectedDayOfWeek
-                                      ).toLocaleLowerCase() as keyof typeof weeklySettingsState
-                                    ]?.isDayExcluded
-                                  }
-                                  onChange={(e) => {
-                                    field.onChange(e.target.value);
-
-                                    weeklySettingsDispatch({
-                                      type: SettingsActionType.updateTimeSlot,
-                                      selectedDay:
-                                        getDayOfWeekName(selectedDayOfWeek),
-                                      daySettings: {
-                                        value: selectedDayOfWeek,
-                                        isDayExcluded: false,
-                                        availability: null,
-                                      },
-                                      timeSlot: {
+                                  overrideSettingsDispatch({
+                                    type: SettingsActionType.overrideDate,
+                                    ticks: selectedOverrideDay?.getTime() ?? null,
+                                    date: selectedOverrideDay ?? null,
+                                    availability: [
+                                      {
                                         from:
-                                          weeklySettingsState[
-                                            getDayOfWeekName(
-                                              selectedDayOfWeek
-                                            ).toLocaleLowerCase() as keyof typeof weeklySettingsState
+                                          overrideSettingsState.settings[
+                                            overrideSettingsState.settings
+                                              .length - 1
                                           ]?.availability?.[index]?.from ?? "",
                                         to: e.target.value,
                                         index: index,
                                       },
-                                    });
-                                  }}
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          </form>
-        </Form>
+                                    ],
+                                  });
+                                }}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={formTimeSlots.control}
+                        name={`timeSlotOverride${n}To`}
+                        render={({ field }) => (
+                          <FormItem className="">
+                            <FormControl>
+                              <Input
+                                type="time"
+                                {...field}
+                                value={field.value}
+                                onChange={(e) => {
+                                  field.onChange(e.target.value);
+
+                                  overrideSettingsDispatch({
+                                    type: SettingsActionType.overrideDate,
+                                    ticks: selectedOverrideDay?.getTime() ?? null,
+                                    date: selectedOverrideDay ?? null,
+                                    availability: [
+                                      {
+                                        from:
+                                          overrideSettingsState.settings[
+                                            overrideSettingsState.settings
+                                              .length - 1
+                                          ]?.availability?.[index]?.from ?? "",
+                                        to: e.target.value,
+                                        index: index,
+                                      },
+                                    ],
+                                  });
+                                }}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
-    );
-  }
+    </>
+  );
 }
